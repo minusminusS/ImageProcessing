@@ -124,27 +124,38 @@ save_fig("Bilater.png")
 
 
 # Нелокальные средние
-nlm_gauss = cv2.fastNlMeansDenoising(image_gauss_noisy, None, h=15, templateWindowSize=7, searchWindowSize=21)
-nlm_const = cv2.fastNlMeansDenoising(image_const_noisy, None, h=15, templateWindowSize=7, searchWindowSize=21)
+h_values = [10, 15, 25]
 
-plt.figure(figsize=(5,4))
-plt.subplot(1,2,1)
-plt.title("NLM (гауссовский шум)", fontsize=8)
-plt.imshow(nlm_gauss, cmap='gray')
-plt.xticks([])
-plt.yticks([])
-plt.axis('off')
+nlm_gauss_results = []
+nlm_const_results = []
 
+for h in h_values:
+    nlm_gauss_results.append(
+        cv2.fastNlMeansDenoising(image_gauss_noisy, None, h=h, templateWindowSize=7, searchWindowSize=21)
+    )
+    nlm_const_results.append(
+        cv2.fastNlMeansDenoising(image_const_noisy, None, h=h, templateWindowSize=7, searchWindowSize=21)
+    )
 
-plt.subplot(1,2,2)
-plt.title("NLM (постоянный шум)", fontsize=8)
-plt.imshow(nlm_const, cmap='gray')
-plt.xticks([])
-plt.yticks([])
-plt.axis('off')
+plt.figure(figsize=(10,4))
 
+for i, h in enumerate(h_values):
+    plt.subplot(2, len(h_values), i+1)
+    plt.title(f"NLM h={h} (гаусс)", fontsize=8)
+    plt.imshow(nlm_gauss_results[i], cmap='gray')
+    plt.xticks([])
+    plt.yticks([])
+    plt.axis('off')
 
-save_fig("NoLocal.png")
+    plt.subplot(2, len(h_values), len(h_values)+i+1)
+    plt.title(f"NLM h={h} (постоянный)", fontsize=8)
+    plt.imshow(nlm_const_results[i], cmap='gray')
+    plt.xticks([])
+    plt.yticks([])
+    plt.axis('off')
+
+save_fig("NoLocal_params.png")
+
 
 # Выяснить, какой фильтр показал лучший результат фильтрации шума.
 def evaluate_filter(original, filtered):
@@ -157,13 +168,16 @@ print("Гауссовский шум:")
 print("Median:", evaluate_filter(image_gray, median_gauss))
 print("Gaussian:", evaluate_filter(image_gray, gauss_f_gauss))
 print("Bilateral:", evaluate_filter(image_gray, bilateral_gauss))
-print("NLM:", evaluate_filter(image_gray, nlm_gauss))
 
-# Оценка для постоянного шума
+for i, h in enumerate(h_values):
+    print(f"NLM h={h}:", evaluate_filter(image_gray, nlm_gauss_results[i]))
+
 print("\nПостоянный шум:")
 print("Median:", evaluate_filter(image_gray, median_const))
 print("Gaussian:", evaluate_filter(image_gray, gauss_f_const))
 print("Bilateral:", evaluate_filter(image_gray, bilateral_const))
-print("NLM:", evaluate_filter(image_gray, nlm_const))
+
+for i, h in enumerate(h_values):
+    print(f"NLM h={h}:", evaluate_filter(image_gray, nlm_const_results[i]))
 
 plt.show()
