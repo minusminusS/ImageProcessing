@@ -5,7 +5,7 @@ from skimage import io
 import os
 
 def save_fig(name):
-    plt.savefig(os.path.join("Data", name), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join("../Data", name), dpi=300, bbox_inches='tight')
 
 
 img_file = 'sar_1_gray.jpg'
