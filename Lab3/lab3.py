@@ -13,8 +13,10 @@ name = 'sar_3.jpg'
 image = cv2.imread(name)
 image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
+image_gray_no_noise = cv2.medianBlur(image_gray, 13)
+
 # Детектор границ
-edges = cv2.Canny(image_gray, 50, 150, apertureSize=3)
+edges = cv2.Canny(image_gray_no_noise, 50, 150, apertureSize=3)
 
 plt.figure(figsize=(5, 4))
 plt.title("Границы (Canny)", fontsize=8)
@@ -34,7 +36,7 @@ ys, xs = np.where(edges > 0)
 best = None
 mx = 0
 
-
+# Ищем линии
 if lines is not None:
     for i in range(len(lines)):
         rho = lines[i][0][0]
@@ -49,6 +51,7 @@ if lines is not None:
         if cnt > mx:
             mx = cnt
             best = (rho, theta)
+
 
 
 if best is not None:
@@ -70,13 +73,15 @@ plt.xticks([])
 plt.yticks([])
 plt.axis('off')
 save_fig("LongestLine.png")
+
 # Точечная
 _, th_simple = cv2.threshold(image_gray, 120, 255, cv2.THRESH_BINARY)
 
 # Отсу
-_, th_otsu = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+_, th_otsu = cv2.threshold(image_gray, 0, 255,
+                           cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
-# Адаптивная бинаризация
+# Адаптивная
 th_adapt = cv2.adaptiveThreshold(
     image_gray,
     255,
@@ -86,29 +91,54 @@ th_adapt = cv2.adaptiveThreshold(
     5
 )
 
-plt.figure(figsize=(10, 4))
+plt.figure(figsize=(10, 8))
 
-plt.subplot(1, 3, 1)
+# Точечная
+plt.subplot(3, 2, 1)
 plt.title("Точечная", fontsize=8)
 plt.imshow(th_simple, cmap='gray')
-plt.xticks([])
-plt.yticks([])
 plt.axis('off')
 
-plt.subplot(1, 3, 2)
+contours, _ = cv2.findContours(th_simple, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+simple_contours = image.copy()
+cv2.drawContours(simple_contours, contours, -1, (0, 255, 0), 2)
+
+plt.subplot(3, 2, 2)
+plt.title("Контур", fontsize=8)
+plt.imshow(cv2.cvtColor(simple_contours, cv2.COLOR_BGR2RGB))
+plt.axis('off')
+
+
+# Отсу
+plt.subplot(3, 2, 3)
 plt.title("Отсу", fontsize=8)
 plt.imshow(th_otsu, cmap='gray')
-plt.xticks([])
-plt.yticks([])
 plt.axis('off')
 
-plt.subplot(1, 3, 3)
+contours, _ = cv2.findContours(th_otsu, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+otsu_contours = image.copy()
+cv2.drawContours(otsu_contours, contours, -1, (0, 255, 0), 2)
+
+plt.subplot(3, 2, 4)
+plt.title("Контур", fontsize=8)
+plt.imshow(cv2.cvtColor(otsu_contours, cv2.COLOR_BGR2RGB))
+plt.axis('off')
+
+
+# Адаптивная
+plt.subplot(3, 2, 5)
 plt.title("Адаптивная", fontsize=8)
 plt.imshow(th_adapt, cmap='gray')
-plt.xticks([])
-plt.yticks([])
+plt.axis('off')
+
+contours, _ = cv2.findContours(th_adapt, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+adapt_contours = image.copy()
+cv2.drawContours(adapt_contours, contours, -1, (0, 255, 0), 2)
+
+plt.subplot(3, 2, 6)
+plt.title("Контур", fontsize=8)
+plt.imshow(cv2.cvtColor(adapt_contours, cv2.COLOR_BGR2RGB))
 plt.axis('off')
 
 save_fig("Binarization.png")
-
 plt.show()
