@@ -8,7 +8,7 @@ def save_fig(name):
     plt.savefig(os.path.join("../Data", name), dpi=300, bbox_inches='tight')
 
 
-# Загружаем изображение
+
 name = 'img.jpg'
 image = cv2.imread(name)
 image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -159,8 +159,8 @@ save_fig("NoLocal_params.png")
 
 # Выяснить, какой фильтр показал лучший результат фильтрации шума.
 def evaluate_filter(original, filtered):
-    psnr = peak_signal_noise_ratio(original, filtered)
-    ssim = structural_similarity(original, filtered)
+    psnr = float(peak_signal_noise_ratio(original, filtered))
+    ssim = float(structural_similarity(original, filtered))
     return psnr, ssim
 
 # Оценка для гауссовского шума
