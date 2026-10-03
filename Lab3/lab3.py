@@ -13,11 +13,8 @@ name = 'sar_3.jpg'
 image = cv2.imread(name)
 image_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-
-# 1) Для изображения sar_3.jpg найти наиболее протяженный участок (выделить линии при помощи преобразования Хафа)
-
 # Детектор границ
-edges = cv2.Canny(image_gray, 50, 150)
+edges = cv2.Canny(image_gray, 50, 150, apertureSize=3)
 
 plt.figure(figsize=(5, 4))
 plt.title("Границы (Canny)", fontsize=8)
@@ -27,36 +24,44 @@ plt.yticks([])
 plt.axis('off')
 save_fig("Canny.png")
 
-# Преобразование Хафа (отрезки)
-lines = cv2.HoughLinesP(
-    edges,
-    rho=1,
-    theta=np.pi / 180,
-    threshold=50,
-    minLineLength=40,
-    maxLineGap=20
-)
+# Преобразование Хафа
+lines = cv2.HoughLines(edges, 1, np.pi / 180, 47)
 
 line_img = image.copy()
 
-longest = None
-max_len = 0
+ys, xs = np.where(edges > 0)
 
-# Поиск самой длинной линии
-for line in lines:
-    x1, y1, x2, y2 = np.array(line).reshape(4)
-    length = np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-    if length > max_len:
-        max_len = length
-        longest = (x1, y1, x2, y2)
+best = None
+mx = 0
 
-for line in lines:
-    x1, y1, x2, y2 = np.array(line).reshape(4)
-    cv2.line(line_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-if longest is not None:
-    x1, y1, x2, y2 = longest
-    cv2.line(line_img, (x1, y1), (x2, y2), (0, 0, 255), 3)
+if lines is not None:
+    for i in range(len(lines)):
+        rho = lines[i][0][0]
+        theta = lines[i][0][1]
+
+        cnt = 0
+        for j in range(len(xs)):
+            d = abs(xs[j] * math.cos(theta) + ys[j] * math.sin(theta) - rho)
+            if d < 1.0:
+                cnt += 1
+
+        if cnt > mx:
+            mx = cnt
+            best = (rho, theta)
+
+
+if best is not None:
+    rho, theta = best
+    a = math.cos(theta)
+    b = math.sin(theta)
+    x0 = a * rho
+    y0 = b * rho
+
+    pt1 = (int(x0 + 300 * (-b)), int(y0 + 300 * (a)))
+    pt2 = (int(x0 - 300 * (-b)), int(y0 - 300 * (a)))
+
+    cv2.line(line_img, pt1, pt2, (0, 0, 255), 3, cv2.LINE_AA)
 
 plt.figure(figsize=(5, 4))
 plt.title("Самая длинная линия (Хаф)", fontsize=8)
@@ -65,17 +70,10 @@ plt.xticks([])
 plt.yticks([])
 plt.axis('off')
 save_fig("LongestLine.png")
-
-
-# 2) 2. Для изображения sar_3.jpg провести исследование алгоритмов бинаризации, выделить участок дорожной полосы.
-
-
-
-
-# Обычная пороговая
+# Точечная
 _, th_simple = cv2.threshold(image_gray, 120, 255, cv2.THRESH_BINARY)
 
-# Otsu
+# Отсу
 _, th_otsu = cv2.threshold(image_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
 # Адаптивная бинаризация
@@ -88,18 +86,17 @@ th_adapt = cv2.adaptiveThreshold(
     5
 )
 
-
 plt.figure(figsize=(10, 4))
 
 plt.subplot(1, 3, 1)
-plt.title("Пороговая", fontsize=8)
+plt.title("Точечная", fontsize=8)
 plt.imshow(th_simple, cmap='gray')
 plt.xticks([])
 plt.yticks([])
 plt.axis('off')
 
 plt.subplot(1, 3, 2)
-plt.title("Otsu", fontsize=8)
+plt.title("Отсу", fontsize=8)
 plt.imshow(th_otsu, cmap='gray')
 plt.xticks([])
 plt.yticks([])
